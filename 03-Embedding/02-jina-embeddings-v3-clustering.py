@@ -1,20 +1,23 @@
+import os
 import pandas as pd
 import numpy as np
 import requests
 from sklearn.cluster import KMeans
+from dotenv import load_dotenv
+load_dotenv()
 
-# 1. 配置Jina API
+# 1. Configure the Jina API
 url = 'https://api.jina.ai/v1/embeddings'
 headers = {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer jina_4a0adace937d43299b955eb9146386a54B2Ubzak2NcPXcTekETSbKeDLtep'
+    'Authorization': f"Bearer {os.getenv('JINA_API_KEY')}"
 }
 
-# 2. 读取game_descriptions数据
-df = pd.read_csv("90-文档-Data/Destruction of Gods/game_descriptions.csv")
+# 2. Load the game_descriptions data
+df = pd.read_csv("../99-EN/journey-of-extinction-husun/jina_games.csv")
 texts = df['description'].tolist()
 
-# 3. 获取文本嵌入
+# 3. Get text embeddings
 data = {
     "model": "jina-embeddings-v3",
     "task": "text-matching",
@@ -26,19 +29,19 @@ data = {
 response = requests.post(url, headers=headers, json=data)
 
 if response.status_code != 200:
-    raise RuntimeError(f"API调用失败: {response.status_code} - {response.text}")
+    raise RuntimeError(f"API call failed: {response.status_code} - {response.text}")
 
 embeddings = [item['embedding'] for item in response.json().get('data', [])]
 if not embeddings:
-    raise RuntimeError("API未返回嵌入向量")
+    raise RuntimeError("API did not return any embedding vectors")
 
 embeddings = np.array(embeddings)
 
-# 4. 聚类分析
+# 4. Cluster analysis
 kmeans = KMeans(n_clusters=3, random_state=42)
 labels = kmeans.fit_predict(embeddings)
 
-# 5. 打印结果
-print("\n聚类结果：")
+# 5. Print results
+print("\nClustering results:")
 for i, lbl in enumerate(labels):
     print(f"Cluster {lbl}: {texts[i]}")
